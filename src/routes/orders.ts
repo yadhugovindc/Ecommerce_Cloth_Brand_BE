@@ -10,6 +10,7 @@ router.use(requireAuth);
 
 router.post('/', asyncHandler(orderController.create));
 router.post('/stripe-session', asyncHandler(orderController.createStripeSession));
+router.get('/stripe-session/:sessionId', asyncHandler(orderController.verifyStripeSession));
 router.get('/', asyncHandler(orderController.listMine));
 router.get('/:id', asyncHandler(orderController.getMine));
 

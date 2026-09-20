@@ -37,6 +37,9 @@ const orderSchema = new mongoose.Schema(
     total: { type: Number, required: true },
     paymentMethod: { type: String, default: 'cod' },
     stripeSessionId: { type: String, index: true, sparse: true },
+    // Set when a paid order could not be fulfilled (e.g. stock ran out after
+    // payment); empty string means no issue. Surfaced for manual resolution.
+    fulfillmentIssue: { type: String, default: '' },
     paymentStatus: {
       type: String,
       enum: ['pending', 'paid', 'failed', 'refunded'],
@@ -81,6 +84,7 @@ export interface OrderDoc extends mongoose.Document {
   total: number;
   paymentMethod: string;
   stripeSessionId?: string;
+  fulfillmentIssue: string;
   paymentStatus: string;
   status: string;
   createdAt: Date;

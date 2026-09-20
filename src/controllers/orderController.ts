@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import * as orderService from '../services/orderService';
 import { Request } from 'express';
-import { getStripe } from '../config/stripe';
+import { getStripe, getWebhookSecret } from '../config/stripe';
 import { AuthRequest } from '../middleware/auth';
 
 export async function create(req: AuthRequest, res: Response) {
@@ -32,19 +32,47 @@ export async function stripeWebhook(req: Request, res: Response) {
     return;
   }
 
+  // Verification and handling are separated on purpose: a bad signature is a
+  // 400 that must never be retried, while a handler failure is a 5xx that
+  // should be, since settling an order is idempotent.
+  let event;
   try {
-    const event = getStripe().webhooks.constructEvent(
+    event = getStripe().webhooks.constructEvent(
       req.body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET || ''
+      getWebhookSecret()
     );
-    if (event.type === 'checkout.session.completed') {
-      await orderService.completeStripeOrder(event.data.object);
+  } catch (error) {
+    res.status(400).send(error instanceof Error ? error.message : 'Invalid webhook');
+    return;
+  }
+
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded':
+        await orderService.completeStripeOrder(event.data.object);
+        break;
+      case 'checkout.session.async_payment_failed':
+        await orderService.failStripeOrder(event.data.object, 'async payment failed');
+        break;
+      case 'checkout.session.expired':
+        await orderService.failStripeOrder(event.data.object, 'checkout expired');
+        break;
     }
     res.json({ received: true });
   } catch (error) {
-    res.status(400).send(error instanceof Error ? error.message : 'Invalid webhook');
+    console.error('❌ Stripe webhook handling failed:', error);
+    res.status(500).json({ message: 'Webhook handling failed' });
   }
+}
+
+export async function verifyStripeSession(req: AuthRequest, res: Response) {
+  const order = await orderService.confirmStripeCheckout(
+    req.user!.id,
+    req.params.sessionId
+  );
+  res.json({ order });
 }
 
 export async function listMine(req: AuthRequest, res: Response) {
