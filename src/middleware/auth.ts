@@ -10,6 +10,23 @@ export interface AuthRequest extends Request {
   };
 }
 
+export async function optionalAuth(req: AuthRequest, _res: Response, next: NextFunction) {
+  const token = req.cookies?.token;
+  if (!token) {
+    next();
+    return;
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+    const user = await User.findById(decoded.id);
+    if (user) req.user = { id: user.id, role: user.role };
+  } catch {
+    // Public chat remains usable when an optional session has expired.
+  }
+  next();
+}
+
 export async function   requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const token = req.cookies?.token;

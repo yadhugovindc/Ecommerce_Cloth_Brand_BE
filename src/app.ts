@@ -11,6 +11,7 @@ import cartRoutes from './routes/cart';
 import orderRoutes from './routes/orders';
 import adminRoutes from './routes/admin';
 import stripeRoutes from './routes/stripe';
+import chatRoutes from './routes/chat';
 import { ApiError } from './utils/errors';
 
 const app = express();
@@ -44,6 +45,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/chat', chatRoutes);
 
 // 404
 app.use((_req, res) => {

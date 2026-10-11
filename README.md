@@ -56,6 +56,7 @@ Base URL: `http://localhost:5000/api`
 | POST   | `/orders`           | ✓     | Create order from items + shipping address |
 | GET    | `/orders`           | ✓     | List my orders                     |
 | GET    | `/orders/:id`       | ✓     | Get one of my orders               |
+| POST   | `/chat`             | Optional | AI intent routing for products, own orders, and own cart |
 | GET    | `/admin/stats`       | admin | Dashboard counts + recent orders    |
 | GET    | `/admin/orders`      | admin | All orders (`?status=`)            |
 | GET    | `/admin/orders/:id`  | admin | Any order (with customer info)     |
@@ -66,6 +67,15 @@ Base URL: `http://localhost:5000/api`
 
 Auth is via a JWT stored in an httpOnly cookie named `token`. Admin routes
 require `role: "admin"`.
+
+### AI assistant
+
+Set `OPENROUTER_API_KEY` in `backend/.env` to enable the chat service. It uses
+`OPENROUTER_MODEL` (default `openrouter/free`) to classify intent and compose
+replies. Product search, order status, and cart summaries are loaded through
+the existing backend services; order and cart intents use the authenticated
+customer when signed in. Coupon and FAQ/support intents report unavailable
+until those services or knowledge sources are configured.
 
 ### Image uploads
 
